@@ -1,0 +1,56 @@
+name: ticketing
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-tickets}
+      POSTGRES_USER: ${POSTGRES_USER:-tickets}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tickets}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+      args:
+        PIP_INDEX_URL: ${PIP_INDEX_URL:-https://pypi.org/simple}
+        APP_VERSION: ${APP_VERSION:-0.1.0}
+        GIT_COMMIT: ${GIT_COMMIT:-unknown}
+    image: ticketing-backend:${APP_VERSION:-0.1.0}   # explicit tags only, never :latest
+    restart: unless-stopped
+    stop_grace_period: 30s   # longer than uvicorn's 20s graceful shutdown
+    environment:
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      STARTUP_DELAY_SECONDS: ${STARTUP_DELAY_SECONDS:-0}
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-tickets}:${POSTGRES_PASSWORD:-tickets}@db:5432/${POSTGRES_DB:-tickets}
+      CORS_ORIGINS: http://localhost:3000
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"   # optional: exposes API docs at http://localhost:8000/docs
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        APP_VERSION: ${APP_VERSION:-0.1.0}
+    image: ticketing-frontend:${APP_VERSION:-0.1.0}   # explicit tags only, never :latest
+    restart: unless-stopped
+    environment:
+      BACKEND_URL: http://backend:8000   # no trailing slash
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "3000:8080"   # nginx listens on 8080 (non-root)
+
+volumes:
+  pgdata:

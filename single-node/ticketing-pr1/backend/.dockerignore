@@ -1,0 +1,16 @@
+# Only app/, config/ and requirements.txt are needed in the image.
+.git
+.gitignore
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+*.db
+tests/
+.pytest_cache/
+pytest.ini
+requirements-dev.txt
+Dockerfile
+.dockerignore
+*.md

@@ -1,0 +1,6 @@
+# Non-secret app config. Baked into the image at /etc/ticketing/app.yaml as a default;
+# in Kubernetes, mount a ConfigMap over it. Override the path with CONFIG_FILE.
+welcome_message: "Welcome to DevOps Tickets"
+features:
+  comments: true
+  dark_mode: false

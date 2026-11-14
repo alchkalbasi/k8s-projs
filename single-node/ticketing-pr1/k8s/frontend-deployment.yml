@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: ticketing
+  labels:
+    app: ticketing-frontend
+    app.kubernetes.io/part-of: ticketing
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ticketing-frontend
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: ticketing-frontend
+    spec:
+      containers:
+        - name: frontend
+          image: ticketing-frontend:0.1.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080       # nginx runs as non-root, so it listens above 1024
+          env:
+            - name: BACKEND_URL         # put into the nginx config at startup
+              value: "http://backend"   # Service "backend", port 80, same namespace. No trailing slash!
+          livenessProbe:
+            httpGet: { path: /healthz, port: http }
+            periodSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet: { path: /healthz, port: http }
+            periodSeconds: 5
+          resources:
+            requests: { cpu: 10m, memory: 16Mi }
+            limits:   { cpu: 100m, memory: 64Mi }

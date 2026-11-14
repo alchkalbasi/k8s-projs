@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: ticketing
+  labels:
+    app: ticketing-backend
+spec:
+  type: ClusterIP              # internal only (this is also the default)
+  selector:
+    app: ticketing-backend     # must match the pod template labels
+  ports:
+    - name: http
+      port: 80                 # what clients call: http://backend
+      targetPort: http         # the named containerPort (8000) in the Deployment

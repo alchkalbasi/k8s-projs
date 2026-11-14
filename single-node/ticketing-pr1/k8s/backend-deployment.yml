@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: ticketing
+  labels:
+    app: ticketing-backend
+    app.kubernetes.io/part-of: ticketing
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: ticketing-backend          # must match template labels exactly
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1                     # at most 4 pods during a rollout
+      maxUnavailable: 0               # never drop below 3 ready
+  template:
+    metadata:
+      labels:
+        app: ticketing-backend
+    spec:
+      containers:
+        - name: backend
+          image: ticketing-backend:0.1.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: backend-config  # LOG_LEVEL, TICKET_PREFIX
+          env:
+            - name: DATABASE_URL      # comment this block out until Postgres exists
+              valueFrom:
+                secretKeyRef:
+                  name: backend-secret
+                  key: DATABASE_URL
+          volumeMounts:
+            - name: app-config
+              mountPath: /etc/ticketing
+              readOnly: true
+          livenessProbe:
+            httpGet: { path: /healthz, port: http }
+            periodSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet: { path: /readyz, port: http }
+            periodSeconds: 5
+          resources:
+            requests: { cpu: 50m, memory: 64Mi }
+            limits:   { cpu: 250m, memory: 128Mi }
+      volumes:
+        - name: app-config
+          configMap:
+            name: backend-config
+            items:
+              - key: app.yaml
+                path: app.yaml        # -> /etc/ticketing/app.yaml

@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+  namespace: ticketing
+  labels:
+    app.kubernetes.io/name: backend
+    app.kubernetes.io/part-of: ticketing
+data:
+  # Plain keys -> consumed as env vars (envFrom / valueFrom.configMapKeyRef).
+  # Values must be strings.
+  LOG_LEVEL: "info"
+  TICKET_PREFIX: "TCK"
+
+  # File key -> mounted as a volume; the key name becomes the file name.
+  # Mount at /etc/ticketing so it shadows the default baked into the image.
+  app.yaml: |
+    welcome_message: "Welcome to DevOps Tickets (k8s)"
+    features:
+      comments: true
+      dark_mode: true

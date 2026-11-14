@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: ticketing
+  labels:
+    app: ticketing-frontend
+spec:
+  type: ClusterIP
+  selector:
+    app: ticketing-frontend
+  ports:
+    - name: http
+      port: 80
+      targetPort: http     # -> 8080
